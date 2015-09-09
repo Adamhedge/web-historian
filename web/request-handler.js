@@ -14,29 +14,44 @@ var headers = {
   'Content-Type': "application/json"
 };
 
-var serveFile = function(){
-  var fileName;
-    if(subURL === '/'){
-      fileName = path.join(__dirname, './public/index.html');
-    } else {
-      fileName = path.join(__dirname, './pulic/' + subURL);
+var fetchWebsite = function(siteURL, response){
+  archive.isUrlArchived(siteURL, function(value){
+    if(value === true){
+      var fileName = archive.paths.archivedSites + "/" + siteURL;     //SET TO TEST
+      fs.readFile(fileName, function(err, data){
+        if(!err){
+          headers['Content-Type'] = "text/html";
+          response.writeHead(200, headers);
+          response.end(data.toString());
+        } else{
+          console.log(err);
+        }
+      });
+    }else {
+      archive.isUrlInList(siteURL, function(value){
+        if(value === true){
+          var fileName = path.join(__dirname, './public/loading.html');
+          fs.readFile(fileName, function(err, data){
+            if(!err){
+              headers['Content-Type'] = mime.lookup(fileName);
+              response.writeHead(200, headers);
+              response.end(data.toString());
+            } else{
+              fetchWebsite(subURL.substring(1), response);
+            }
+          });
+        } else {
+          utils.sendResponse(response, '', 404);
+        }
+      });
     }
-    fs.readFile(fileName, function(err, data){
-      if(!err){
-        headers['Content-Type'] = mime.lookup(fileName);
-        response.writeHead(200, headers);
-        response.end(data.toString());
-      } else{
-        console.log(err);
-      }
-    });
+  });
 };
 
 var actions = {
   'GET': function(request, response) {
     var subURL = request.url.split('?')[0];
     var fileName;
-    //console.log(subURL);
     if(subURL === '/'){
       fileName = path.join(__dirname, './public/index.html');
     } else {
@@ -48,7 +63,7 @@ var actions = {
         response.writeHead(200, headers);
         response.end(data.toString());
       } else{
-        console.log(subURL)
+        fetchWebsite(subURL.substring(1), response);
       }
     });
   },
@@ -65,7 +80,4 @@ var actions = {
 };
 
 exports.requestHandler = utils.makeActionHandler(actions);
-
-// headers['Content-Type'] = mime.lookup(fileName);
-//         response.writeHead(200, headers);
-//         response.end(data.toString());
+//archive.initalize();

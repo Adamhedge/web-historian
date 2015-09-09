@@ -9,10 +9,12 @@ var _ = require('underscore');
  * customize it in any way you wish.
  */
 
-exports.paths = {
+exports.paths = paths = {
   siteAssets: path.join(__dirname, '../web/public'),
   archivedSites: path.join(__dirname, '../archives/sites'),
-  list: path.join(__dirname, '../archives/sites.txt')
+  list: path.join(__dirname, '../archives/sites.txt'),
+  testlist: '../test/testdata/sites.txt',
+  testArchive: '../test/testData/sites'
 };
 
 // Used for stubbing paths for tests, do not modify
@@ -26,15 +28,51 @@ exports.initialize = function(pathsObj) {
 // modularize your code. Keep it clean!
 
 exports.readListOfUrls = function() {
+  //console.log(exports.isUrlInList("example1.com"));
+  fs.readFile(paths.list, function(err, data){
+      if(!err){
+        //we were able to read the sites file.
+        console.log(data.toString().split("\n"));
+      } else{
+        console.log(err);
+        // fetchWebsite(subURL.substring(1));
+      }
+  });
 };
 
-exports.isUrlInList = function() {
+exports.isUrlInList = function(myURL, callback) {
+  fs.readFile(paths.list, function(err, data){
+      if(!err){
+        var URLs= data.toString().split("\n");
+        for(var i = 0; i < URLs.length; i ++){
+          if(URLs[i] === myURL){
+            callback(true);
+          }
+        }
+        callback(false);
+      } else{
+        console.log(err);
+      }
+  });
 };
 
 exports.addUrlToList = function() {
 };
 
-exports.isUrlArchived = function() {
+exports.isUrlArchived = function(myURL, callback) {
+  fs.readdir(paths.archivedSites, function(err, data){
+      if(!err){
+        //console.log(data);
+        for(var i = 0; i < data.length; i ++){
+          if(data[i] === myURL){
+            callback(true);
+          }
+        }
+        callback(false);
+      } else{
+        console.log(err);
+      }
+  });
 };
 
 exports.downloadUrls = function() {
