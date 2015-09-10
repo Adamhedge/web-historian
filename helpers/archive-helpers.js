@@ -102,7 +102,13 @@ exports.isUrlArchived = function(myURL, callback) {
 };
 
 var getWebsiteTool = function(url){
-  http.get({url: url}, paths.archivedSites + "/" + url, function(){console.log("Success!");});
+  http.get({url: url}, paths.archivedSites + "/" + url, function(err){
+    if (!err){
+    console.log("Success!");
+  } else {
+    console.log(err);
+  }
+  });
   return '';
   //result
 };
@@ -122,17 +128,17 @@ exports.downloadUrls = function(array, callback) {
     myURLs = array;
   }
   console.log(myURLs);
-  if(myURLs === []){
+  if(myURLs.length == 0){
     fs.readFile(paths.list, function(err, data){
       if(!err){
         var URLs= data.toString().split("\n");
         console.log(URLs);
         for(var i = 0; i < URLs.length; i ++){
-          exports.isUrlArchived(URLs[i], function(value){
+          exports.isUrlArchived(URLs[i], function(value, myUrl){
             console.log("Value is: " + value);
-            if (!value){
+            if (!value && myUrl != "\n"){
               console.log("Archiving site.");
-              getWebsiteTool(urls[i]);
+              getWebsiteTool(myUrl);
             }
           });
         }
