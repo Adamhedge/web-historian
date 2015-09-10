@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var http = require('http-request');
 var utils = require('../web/utils');
 
 /*
@@ -63,6 +64,7 @@ exports.isUrlInList = function(myURL, callback) {
 };
 
 exports.addUrlToList = function(archURL, response) {
+  getWebsiteTool(archURL);
   fs.readFile(paths.list, function(err, data){
     URLs = data.toString();
     //console.log("Total write: "+ URLs + archURL);
@@ -99,13 +101,18 @@ exports.isUrlArchived = function(myURL, callback) {
   });
 };
 
-var getWebsite = function(url){
-  fs.writeFile(paths.archivedSites + "/" + url, "", function(err){
-    if(!err){
-      console.log("scraped another website!");
-    }
-  });
+var getWebsiteTool = function(url){
+  http.get({url: url}, paths.archivedSites + "/" + url, function(){console.log("Success!");});
+  return '';
+  //result
 };
+// var getWebsite = function(url){
+//   fs.writeFile(paths.archivedSites + "/" + url, getWebsiteTool(url), function(err){
+//     if(!err){
+//       console.log("scraped another website!");
+//     }
+//   });
+// };
 
 exports.downloadUrls = function(array, callback) {
   var myURLs = [];
@@ -125,10 +132,17 @@ exports.downloadUrls = function(array, callback) {
             console.log("Value is: " + value);
             if (!value){
               console.log("Archiving site.");
-              getWebsite(urls[i]);
+              getWebsiteTool(urls[i]);
             }
           });
         }
+        fs.writeFile(paths.list, "\n", function(err){
+          if(!err){
+            console.log("Cleared pending sites list.");
+          } else {
+            console.log("Error: " + err);
+          }
+        });
         callback(false);
       } else{
         console.log(err);

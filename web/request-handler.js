@@ -88,14 +88,18 @@ var actions = {
     var messageData = '';
     var URLs = '';
     var archURL = '';
-
     request.on('data', function(chunk) {
       messageData += chunk;
       archURL = messageData.substr(4);
       if(archURL === ""){
         //error out
       } else {
-        archive.addUrlToList(archURL, response);
+        archive.isUrlArchived(messageData, function(value, URL){
+          if(value){
+            archive.addUrlToList(URL, response);
+          }
+        });
+        fetchWebsite(archURL, request, response);
       }
     });
 

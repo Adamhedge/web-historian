@@ -31,5 +31,5 @@ exports.makeActionHandler = function(actionMap) {
     } else {
       exports.sendResponse(response, '', 404);
     }
-  }
+  };
 };
