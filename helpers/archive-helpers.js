@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var utils = require('../web/utils');
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -11,6 +12,7 @@ var _ = require('underscore');
 
 exports.paths = paths = {
   siteAssets: path.join(__dirname, '../web/public'),
+  loadingPage: path.join(path.join(__dirname, '../web/public'), '/loading.html'),
   archivedSites: path.join(__dirname, '../archives/sites'),
   list: path.join(__dirname, '../archives/sites.txt'),
   testlist: '../test/testdata/sites.txt',
@@ -27,17 +29,21 @@ exports.initialize = function(pathsObj) {
 // The following function names are provided to you to suggest how you might
 // modularize your code. Keep it clean!
 
-exports.readListOfUrls = function() {
-  //console.log(exports.isUrlInList("example1.com"));
+exports.readListOfUrls = function(callback) {
   fs.readFile(paths.list, function(err, data){
       if(!err){
         //we were able to read the sites file.
-        console.log(data.toString().split("\n"));
+        urls = data.toString().split("\n");
+        urls.pop();
+        if(callback){
+          callback(urls);
+        }
+        return urls;
       } else{
         console.log(err);
-        // fetchWebsite(subURL.substring(1));
       }
   });
+
 };
 
 exports.isUrlInList = function(myURL, callback) {
@@ -56,24 +62,87 @@ exports.isUrlInList = function(myURL, callback) {
   });
 };
 
-exports.addUrlToList = function() {
+exports.addUrlToList = function(archURL, response) {
+  fs.readFile(paths.list, function(err, data){
+    URLs = data.toString();
+    //console.log("Total write: "+ URLs + archURL);
+    fs.writeFile(paths.list, URLs + archURL + "\n", function(err){
+      if(err){
+        console.log("There was an error: " + err);
+      } else {
+        console.log("File write success");
+        if(typeof response === 'function'){
+          console.log("AddURL callback.");
+          response();
+        } else {
+          utils.sendResponse(response, '', 302);
+        }
+      }
+    });
+  });
 };
 
 exports.isUrlArchived = function(myURL, callback) {
   fs.readdir(paths.archivedSites, function(err, data){
+      var isArch = false;
       if(!err){
-        //console.log(data);
         for(var i = 0; i < data.length; i ++){
           if(data[i] === myURL){
-            callback(true);
+            isArch = true;
           }
         }
-        callback(false);
+        console.log("isURL callback");
+        callback(isArch, myURL);
       } else{
         console.log(err);
       }
   });
 };
 
-exports.downloadUrls = function() {
+var getWebsite = function(url){
+  fs.writeFile(paths.archivedSites + "/" + url, "", function(err){
+    if(!err){
+      console.log("scraped another website!");
+    }
+  });
+};
+
+exports.downloadUrls = function(array, callback) {
+  var myURLs = [];
+  if (typeof array === 'function'){
+    callback = array;
+  } else if (Array.isArray(array)){
+    myURLs = array;
+  }
+  console.log(myURLs);
+  if(myURLs === []){
+    fs.readFile(paths.list, function(err, data){
+      if(!err){
+        var URLs= data.toString().split("\n");
+        console.log(URLs);
+        for(var i = 0; i < URLs.length; i ++){
+          exports.isUrlArchived(URLs[i], function(value){
+            console.log("Value is: " + value);
+            if (!value){
+              console.log("Archiving site.");
+              getWebsite(urls[i]);
+            }
+          });
+        }
+        callback(false);
+      } else{
+        console.log(err);
+      }
+    });
+  } else {
+    for(var i = 0; i < myURLs.length; i ++){
+      exports.isUrlArchived(myURLs[i], function(value, cbURL){
+        console.log("Value is: " + value + " " + cbURL);
+        if (!value){
+          console.log("Archiving site.");
+          getWebsite(cbURL);
+        }
+      });
+    }
+  }
 };

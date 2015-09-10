@@ -14,10 +14,12 @@ var headers = {
   'Content-Type': "application/json"
 };
 
-var fetchWebsite = function(siteURL, response){
+//some major opportunities for modularity here.
+var fetchWebsite = function(siteURL, request, response){
+  //First, check to see if the site is archived.
   archive.isUrlArchived(siteURL, function(value){
     if(value === true){
-      var fileName = archive.paths.archivedSites + "/" + siteURL;     //SET TO TEST
+      var fileName = archive.paths.archivedSites + "/" + siteURL;
       fs.readFile(fileName, function(err, data){
         if(!err){
           headers['Content-Type'] = "text/html";
@@ -27,6 +29,7 @@ var fetchWebsite = function(siteURL, response){
           console.log(err);
         }
       });
+    //The site isn't archived, so check to see if archiving is pending.  Would love to refactor but for this issues.
     }else {
       archive.isUrlInList(siteURL, function(value){
         if(value === true){
@@ -37,7 +40,7 @@ var fetchWebsite = function(siteURL, response){
               response.writeHead(200, headers);
               response.end(data.toString());
             } else{
-              fetchWebsite(subURL.substring(1), response);
+              console.log(err);
             }
           });
         } else {
@@ -47,6 +50,19 @@ var fetchWebsite = function(siteURL, response){
     }
   });
 };
+
+var renderLoadingPage = function(request, response){
+  fs.readFile(archive.paths.loadingPage, function(err, data){
+    if(!err){
+      headers['Content-Type'] = mime.lookup(fileName);
+      response.writeHead(200, headers);
+      response.end(data.toString());
+    } else{
+      console.log(err);
+    }
+  });
+};
+
 
 var actions = {
   'GET': function(request, response) {
@@ -63,17 +79,36 @@ var actions = {
         response.writeHead(200, headers);
         response.end(data.toString());
       } else{
-        fetchWebsite(subURL.substring(1), response);
+        fetchWebsite(subURL.substring(1), request, response);
       }
     });
   },
+
   'POST': function(request, response) {
-    utils.collectData(request, function(message) {
-      message.objectId = ++objectIdCounter;
-      messages.push(message);
-      utils.sendResponse(response, {objectId: message.objectId}, 201);
+    var messageData = '';
+    var URLs = '';
+    var archURL = '';
+
+    request.on('data', function(chunk) {
+      messageData += chunk;
+      archURL = messageData.substr(4);
+      if(archURL === ""){
+        //error out
+      } else {
+        archive.addUrlToList(archURL, response);
+      }
     });
+
+    //console.log(messageData.substr(4));
+    //Check if the site is already in the archive
+      //render it
+    //Check if the site is on the list
+      //render the list
+    //Write the file to the queue
+      //render the list
+
   },
+
   'OPTIONS': function(request, response) {
     utils.sendResponse(response, null);
   }

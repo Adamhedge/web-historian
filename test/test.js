@@ -79,8 +79,9 @@ describe("server", function() {
 describe("archive helpers", function(){
   describe("#readListOfUrls", function () {
     it("should read urls from sites.txt", function (done){
+      this.timeout(5000);
       var urlArray = ["example1.com", "example2.com"];
-      fs.writeFileSync(archive.paths.list, urlArray.join("\n"));
+      fs.writeFileSync(archive.paths.list, urlArray.join("\n") + "\n");
 
       archive.readListOfUrls(function(urls){
         expect(urls).to.deep.equal(urlArray);
@@ -116,6 +117,7 @@ describe("archive helpers", function(){
 
       archive.addUrlToList("someurl.com", function () {
         archive.isUrlInList("someurl.com", function (is) {
+          console.log("First done.");
           expect(is);
           done();
         });
@@ -151,7 +153,7 @@ describe("archive helpers", function(){
       setTimeout(function () {
         expect(fs.readdirSync(archive.paths.archivedSites)).to.deep.equal(urlArray);
         done();
-      }, 25);
+      }, 100);
     });
   });
 });
